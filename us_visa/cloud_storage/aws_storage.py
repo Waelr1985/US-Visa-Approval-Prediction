@@ -1,4 +1,5 @@
 import boto3
+from botocore.config import Config
 from us_visa.configuration.aws_connection import S3Client
 from io import StringIO
 from typing import Union,List
@@ -262,3 +263,49 @@ class SimpleStorageService:
             return df
         except Exception as e:
             raise USvisaException(e, sys) from e
+
+import boto3
+from botocore.config import Config
+
+class S3Client:
+    def __init__(self, region_name='eu-central-1'):  # Replace with your preferred region
+        self.config = Config(
+            region_name=region_name,
+            signature_version='s3v4'
+        )
+        self.s3_client = boto3.client('s3', config=self.config)
+        self.s3_resource = boto3.resource('s3', config=self.config)
+
+    def list_buckets(self):
+        try:
+            response = self.s3_client.list_buckets()
+            for bucket in response['Buckets']:
+                print("Bucket Name: " + bucket['Name'] + ", Creation Date: " + str(bucket['CreationDate']))
+        except Exception as e:
+            print("An error occurred: " + str(e))
+
+    def list_objects(self, bucket_name):
+        try:
+            response = self.s3_client.list_objects_v2(Bucket=bucket_name)
+            if 'Contents' in response:
+                for obj in response['Contents']:
+                    print("Object Key: " + obj['Key'])
+            else:
+                print("No objects found in the bucket.")
+        except Exception as e:
+            print("An error occurred: " + str(e))
+
+    def get_object(self, bucket_name, object_key):
+        try:
+            response = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+            return response['Body'].read()
+        except Exception as e:
+            print("An error occurred: " + str(e))
+
+# Example usage
+if __name__ == "__main__":
+    s3_client = S3Client(region_name='eu-central-1')  # Replace with your preferred region
+    s3_client.list_buckets()
+    s3_client.list_objects('waelr1985-usvisa-model2024')  # Replace with your bucket name
+    content = s3_client.get_object('waelr1985-usvisa-model2024', 'model.pkl')
+    print(content)
